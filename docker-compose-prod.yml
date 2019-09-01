@@ -1,0 +1,64 @@
+version: '3.5'
+
+services:
+
+  vue-nginx-prod:
+    container_name: vue-nginx-prod
+    build:
+      context: .
+      dockerfile: client/docker/Dockerfile-vue-prod
+    volumes:
+    - ./nginx/nginx-prod:/etc/nginx/conf.d
+    - letsencrypt_certs:/etc/nginx/certs
+    - letsencrypt_www:/var/www/letsencrypt
+    ports:
+    - "80:80"
+    - "443:443"
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - PORT=80
+      - GENERATE_SOURCEMAP=false
+    depends_on:
+      - django-prod
+    
+  django-prod:
+    environment:
+      - ALLOWED_HOSTS={your_domain}
+# The secret key should be consistent and added from a .env file from the host server
+#       - SECRET_KEY=$(SECRET_KEY)
+    build:
+      context: .
+      dockerfile: server/docker/Dockerfile-django
+      args:
+        - debug=False
+    #image: my/django-prod
+    container_name: django-con
+    command: >
+      sh -c "cd /src/server && sleep 20 && gunicorn -b 0.0.0.0:8000 proj.wsgi:application"
+#    volumes:
+#      - ./docker/nginx-prod:/etc/nginx/conf.d
+    ports:
+      - "8000:8000"
+    restart: always
+
+
+  mysql:
+    image: mysql:5.7
+    volumes:
+       - db_data:/var/lib/mysql
+       - ./mysql:/docker-entrypoint-initdb.d
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    restart: always
+    environment:
+       MYSQL_ROOT_PASSWORD: root
+       MYSQL_USER: root
+       MYSQL_DATABASE: django
+    container_name: mysql_con
+
+volumes:
+    db_data:
+    letsencrypt_certs:
+    letsencrypt_www:

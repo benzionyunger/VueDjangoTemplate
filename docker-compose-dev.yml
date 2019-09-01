@@ -1,0 +1,55 @@
+version: '3.7'
+services:
+
+  vue-client:
+    build:
+      context: .
+      dockerfile: client/docker/Dockerfile-vue-client
+    container_name: vue_client
+    ports:
+      - "8091:8091"
+    volumes:
+      - './client/app:/app'
+      - '/app/node_modules'
+    command: sh -c "npm run serve"
+    restart: always
+
+
+  django:
+    build:
+      context: .
+      dockerfile: server/docker/Dockerfile-django
+      args:
+        - debug=True
+    container_name: django-con
+    restart: always
+    environment:
+      - SECRET_KEY='isgbvisavisykwr'
+    
+    # make sleep for wait to mysql to load and for db migrations 
+    command: >
+        sh -c "python3 /src/server/manage.py runserver 0.0.0.0:8000 && sleep 20  && python3 /src/server/manage.py migrate "
+    depends_on:
+      - mysql
+    volumes:
+      - ./server:/*
+    ports:
+      - '8000:8000'
+
+  mysql:
+    image: mysql:5.7
+    volumes:
+       - db_data:/var/lib/mysql
+       - ./mysql:/docker-entrypoint-initdb.d
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    restart: always
+    environment:
+       MYSQL_ROOT_PASSWORD: root
+       MYSQL_USER: root
+       MYSQL_DATABASE: django
+    container_name: mysql_con
+
+volumes:
+    db_data:
