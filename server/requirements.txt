@@ -11,7 +11,7 @@ more-itertools==4.2.0
 pluggy==0.6.0
 #the following lib is for postgress
 #psycopg2-binary==2.8.3
-py==1.5.3
+py==1.10.0
 pylint==1.9.2
 pytest==3.6.1
 pytest-django==3.2.1
